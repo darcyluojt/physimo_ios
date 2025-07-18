@@ -29,9 +29,33 @@
 		A4AF93892E22D5A7001207D5 /* physimoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = physimoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A4AF93A22E22D63C001207D5 /* Exceptions for "physimo" folder in "physimo" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Models/Upload.swift,
+			);
+			target = A4AF93712E22D5A5001207D5 /* physimo */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		A4AF93A32E22D63C001207D5 /* Exceptions for "physimo" folder in "Copy Bundle Resources" phase from "physimo" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = A4AF93702E22D5A5001207D5 /* Resources */;
+			membershipExceptions = (
+				Models/Upload.swift,
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A4AF93742E22D5A5001207D5 /* physimo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A4AF93A22E22D63C001207D5 /* Exceptions for "physimo" folder in "physimo" target */,
+				A4AF93A32E22D63C001207D5 /* Exceptions for "physimo" folder in "Copy Bundle Resources" phase from "physimo" target */,
+			);
 			path = physimo;
 			sourceTree = "<group>";
 		};
@@ -400,6 +424,9 @@
 				DEVELOPMENT_TEAM = K8K2DKKCR7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "We need access to your camera to record rehab exercises.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "We need permission to save your processed videos or photos";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We need access to let you upload existing exercise media";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -428,6 +455,9 @@
 				DEVELOPMENT_TEAM = K8K2DKKCR7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "We need access to your camera to record rehab exercises.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "We need permission to save your processed videos or photos";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We need access to let you upload existing exercise media";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
