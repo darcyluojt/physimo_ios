@@ -6,7 +6,8 @@ struct MetricsCalculator {
     static func calculateKneeAngles(
         from result: DetectionResult,
         uploadId: UUID,
-        archetypes: [Archetype] = Archetype.all
+        archetypes: [Archetype] = Archetype.all,
+        source: Metric.Source
     ) -> [Metric] {
         let allJoints = result.allJoints()
         var metrics: [Metric] = []
@@ -38,6 +39,7 @@ struct MetricsCalculator {
                 id: UUID(),
                 uploadId: uploadId,
                 archetype: archetype,
+                source: source,
                 value: Double(180 - angleDeg),
                 accuracy: 1.0
             )
@@ -45,6 +47,48 @@ struct MetricsCalculator {
         }
         return metrics
     }
+    
+    static func calculateKneeAngles2D (
+        from result: DetectionResult2D,
+        uploadId: UUID,
+        archetypes: [Archetype] = Archetype.all,
+        source: Metric.Source
+    ) -> [Metric] {
+        let allJoints = result.allJoints()
+        var metrics: [Metric] = []
+        
+        let archetypes = archetypes.filter { $0.name == "knee-angle" }
+        for archetype in archetypes {
+            let keys = archetype.joints
+            guard let parentName = HumanBodyPoseObservation.JointName(rawValue: keys[0].rawValue),
+                  let pivotName = HumanBodyPoseObservation.JointName(rawValue: keys[1].rawValue),
+                  let childName = HumanBodyPoseObservation.JointName(rawValue: keys[2].rawValue),
+                  let parent = allJoints[parentName],
+                  let pivot = allJoints[pivotName],
+                  let child = allJoints[childName]
+            else { continue }
+            let confidence = min(parent.confidence, pivot.confidence, child.confidence)
+            let v1 = simd_float2(Float(parent.location.x - pivot.location.x), Float(parent.location.y - pivot.location.y))
+            let v2 = simd_float2(Float(child.location.x - pivot.location.x), Float(child.location.y - pivot.location.y))
+
+            let cosθ = simd_dot(simd_normalize(v1), simd_normalize(v2))
+            let clamped = simd_clamp(cosθ, -1.0, 1.0)
+            let angleDeg = acos(clamped) * 180 / .pi
+            let metric = Metric(
+                            id: UUID(),
+                            uploadId: uploadId,
+                            archetype: archetype,
+                            source: source,
+                            value: Double(180 - angleDeg),
+                            accuracy: Double(confidence)
+                        )
+                        metrics.append(metric)
+                    }
+
+                    return metrics
+                }
+
+
 }
     
 extension SIMD4 where Scalar == Float {

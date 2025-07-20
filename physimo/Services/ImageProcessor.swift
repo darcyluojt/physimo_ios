@@ -1,43 +1,81 @@
 import UIKit
 @preconcurrency import Vision
 @preconcurrency import VisionKit
+import SwiftUI
+import ImageIO
 
-final class ImageProcessor {
-    static func process(image: UIImage) async -> DetectionResult? {
-        guard let cgImage = image.cgImage else { return nil }
-        
-        let request = DetectHumanBodyPose3DRequest()
-        
-        let handler = ImageRequestHandler(cgImage)
-        do {
-            let observations = try await handler.perform(request)
-            if let observation = observations.first {
-                print("[PoseObs] \(observation)")
-                return DetectionResult(observation: observation)
-            } else {
-                print("No pose detected.")
-                return nil
-            }
-        } catch {
-            print("Post detection failed: \(error)")
-            return nil
-        }
-    }
+enum Error: Swift.Error {
+  case invalidImage
 }
 
-// DEFINE DETECTION RESULT
-struct DetectionResult {
-    let observation: HumanBodyPose3DObservation
-
-    func joints(for group: HumanBodyPose3DObservation.JointsGroupName) -> [HumanBodyPose3DObservation.JointName: Joint3D] {
-            observation.allJoints(in: group)
+class ImageProcessor {
+    private let vision2D = Vision2DProcessor()
+    private let vision3D = Vision3DProcessor()
+    //    private let mediaPipe = MediaPipeProcessor()
+    func process(image: UIImage) async throws -> (pose2D: DetectionResult2D?, pose3D: DetectionResult?){
+        guard let cgImage = image.cgImage else {
+            throw Error.invalidImage
         }
+        let orientation = CGImagePropertyOrientation(image.imageOrientation)
+        print("orientation",orientation)
+        
+                // 1. Detect 2D poses
+        let poses2D = try await detect2DPoses(in: cgImage, orientation: orientation)
+                
+                // 2. Detect 3D poses
+        let poses3D = try await detect3DPoses(in: cgImage)
+        
+        return (poses2D, poses3D)
+                // 3. Run MediaPipe
+                //                    let mpPoses = try await detectMediaPipe(in: image)
+                
+                // Combine results
+                //                    let combined = zip3(poses3D, poses2D, mpPoses)
+                //                        .map { CombinedPoseResult(vision3D: $0, vision2D: $1, mediaPipe: $2) }
+                //                    let combined = zip3(poses3D, poses2D)
+                //                        .map { CombinedPoseResult(vision3D: $0, vision2D: $1) }
+                
+                //                    completion(.success(combined))
+                
     
-    func allJoints() -> [HumanBodyPose3DObservation.JointName: Joint3D] {
-        observation.allJoints()
+    }
+    
+    /// Calls the Vision2DProcessor
+    private func detect2DPoses(in cgImage: CGImage, orientation: CGImagePropertyOrientation) async throws -> DetectionResult2D? {
+        return try await vision2D.detect2dPoses(in: cgImage, orientation: orientation)
+    }
+    
+    /// Calls the Vision3DProcessor
+    private func detect3DPoses(in cgImage: CGImage) async throws -> DetectionResult? {
+        return try await vision3D.detect3dPoses(in: cgImage)
+    }
+    
+    //        /// Calls the MediaPipeProcessor
+    //        private func detectMediaPipe(in image: UIImage) async throws -> [MediaPipePose] {
+    //            return try await mediaPipe.detectLandmarks(in: image)
+    //        }
+    //    }
+    
+    /// Helper for zipping three arrays
+    func zip3<A, B, C>(_ a: [A], _ b: [B], _ c: [C]) -> [(A, B, C)] {
+        let count = min(a.count, b.count, c.count)
+        return (0..<count).map { (a[$0], b[$0], c[$0]) }
     }
 }
 
+//// DEFINE DETECTION RESULT
+//struct DetectionResult {
+//    let observation: HumanBodyPose3DObservation
+//
+//    func joints(for group: HumanBodyPose3DObservation.JointsGroupName) -> [HumanBodyPose3DObservation.JointName: Joint3D] {
+//            observation.allJoints(in: group)
+//        }
+//    
+//    func allJoints() -> [HumanBodyPose3DObservation.JointName: Joint3D] {
+//        observation.allJoints()
+//    }
+//}
+//
 
 
 

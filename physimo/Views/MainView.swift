@@ -20,6 +20,7 @@ struct MainView: View {
                             Text("Upload")
                                 .font(.headline)
                         }
+                        .frame(minWidth: 100, maxWidth: .infinity) 
                         .padding()
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
@@ -40,6 +41,7 @@ struct MainView: View {
                             Text("Live")
                                 .font(.headline)
                         }
+                        .frame(minWidth: 100, maxWidth: .infinity)
                         .padding()
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)

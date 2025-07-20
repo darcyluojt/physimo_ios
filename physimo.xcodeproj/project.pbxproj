@@ -30,7 +30,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		A4AF93A22E22D63C001207D5 /* Exceptions for "physimo" folder in "physimo" target */ = {
+		A4A3CDF82E2B98E2000BB343 /* Exceptions for "physimo" folder in "physimo" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Models/Upload.swift,
@@ -40,21 +40,22 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		A4AF93A32E22D63C001207D5 /* Exceptions for "physimo" folder in "Copy Bundle Resources" phase from "physimo" target */ = {
+		A4A3CDF92E2B98E2000BB343 /* Exceptions for "physimo" folder in "Copy Bundle Resources" phase from "physimo" target */ = {
 			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
 			buildPhase = A4AF93702E22D5A5001207D5 /* Resources */;
 			membershipExceptions = (
 				Models/Upload.swift,
+				Processor/Vision2DProcessor.swift,
 			);
 		};
 /* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		A4AF93742E22D5A5001207D5 /* physimo */ = {
+		A4A3CDE82E2B98E2000BB343 /* physimo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				A4AF93A22E22D63C001207D5 /* Exceptions for "physimo" folder in "physimo" target */,
-				A4AF93A32E22D63C001207D5 /* Exceptions for "physimo" folder in "Copy Bundle Resources" phase from "physimo" target */,
+				A4A3CDF82E2B98E2000BB343 /* Exceptions for "physimo" folder in "physimo" target */,
+				A4A3CDF92E2B98E2000BB343 /* Exceptions for "physimo" folder in "Copy Bundle Resources" phase from "physimo" target */,
 			);
 			path = physimo;
 			sourceTree = "<group>";
@@ -99,7 +100,7 @@
 		A4AF93692E22D5A5001207D5 = {
 			isa = PBXGroup;
 			children = (
-				A4AF93742E22D5A5001207D5 /* physimo */,
+				A4A3CDE82E2B98E2000BB343 /* physimo */,
 				A4AF93822E22D5A7001207D5 /* physimoTests */,
 				A4AF938C2E22D5A7001207D5 /* physimoUITests */,
 				A4AF93732E22D5A5001207D5 /* Products */,
@@ -132,7 +133,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				A4AF93742E22D5A5001207D5 /* physimo */,
+				A4A3CDE82E2B98E2000BB343 /* physimo */,
 			);
 			name = physimo;
 			packageProductDependencies = (
