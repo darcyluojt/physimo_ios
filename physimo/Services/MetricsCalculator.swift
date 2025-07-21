@@ -9,8 +9,12 @@ struct MetricsCalculator {
         archetypes: [Archetype] = Archetype.all,
         source: Metric.Source
     ) -> [Metric] {
-        let allJoints = result.allJoints()
         var metrics: [Metric] = []
+        if source == .HumanBodyPose3DObservation {
+            let allJoints = result.allJoints(),
+        } else {
+            let landmarks = result.poselandmark3D
+            
         
         let archetypes = archetypes.filter { $0.name == "knee-angle" }
         for archetype in archetypes {

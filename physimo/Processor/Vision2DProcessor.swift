@@ -25,7 +25,7 @@ final class Vision2DProcessor{
             let observations: [HumanBodyPoseObservation] =
                 try await request.perform(on: cgImage, orientation: orientation)
             guard let first = observations.first else { return nil }
-            print("Vision 2D:", first)
+            print("Vision 2D:", first.allJoints())
             return DetectionResult2D(observation: first)
         } catch {
             print("Vision 2D", error)

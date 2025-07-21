@@ -1,39 +1,70 @@
-//
-//import Vision
-//import simd
-//
-//struct JointAngleCalculator {
-//    /// Calculates the angle at a joint using its parent and child joints.
-//    /// - Parameters:
-//    ///   - proximal: the "parent" joint (e.g. hip)
-//    ///   - joint: the joint where the angle is measured (e.g. knee)
-//    ///   - distal: the "child" joint (e.g. ankle)
-//    /// - Returns: Angle in degrees between the two vectors formed: proximal→joint and distal→joint
-//    static func angleBetween(
-//        joints: [VNHumanBodyPose3DObservation.JointName: VNRecognizedPoint3D],
-//        proximalName: VNHumanBodyPose3DObservation.JointName,
-//        jointName: VNHumanBodyPose3DObservation.JointName,
-//        distalName: VNHumanBodyPose3DObservation.JointName
-//    ) -> Double? {
-//        guard let proximal = joints[proximalName],
-//                  let joint = joints[jointName],
-//                  let distal = joints[distalName] else {
-//                return nil
-//            }
-//        let jointVec = joint.location
-//        let proximalVec = proximal.location
-//        let distalVec = distal.location
-//
-//        let vec1 = proximalVec - jointVec
-//        let vec2 = distalVec - jointVec
-//
-//
-//        let normalized1 = simd_normalize(vec1)
-//        let normalized2 = simd_normalize(vec2)
-//
-//        let dot = simd_dot(normalized1, normalized2)
-//        let clamped = max(min(dot, 1.0), -1.0) // clamp to avoid NaNs
-//        let angleRadians = acos(clamped)
-//        return Double(angleRadians * 180 / .pi)
-//    }
-//}
+import CoreGraphics
+import simd
+
+/// A helper for calculating angles at a vertex formed by two points, in either 2D or 3D space.
+struct AngleCalculationHelper {
+    /// Calculates the planar angle (in degrees) at `vertex` formed by `pointA–vertex–pointB` in 2D.
+    /// - Parameters:
+    ///   - pointA: First point defining the angle.
+    ///   - vertex: The vertex point where the angle is measured.
+    ///   - pointB: Second point defining the angle.
+    /// - Returns: Angle in degrees between the vectors `pointA - vertex` and `pointB - vertex`.
+    static func calculateAngle2D(
+        pointA: CGPoint,
+        vertex: CGPoint,
+        pointB: CGPoint
+    ) -> Double {
+        // Create vectors from vertex to each point
+        let vectorA = CGVector(dx: pointA.x - vertex.x, dy: pointA.y - vertex.y)
+        let vectorB = CGVector(dx: pointB.x - vertex.x, dy: pointB.y - vertex.y)
+        
+        // Dot product and magnitudes
+        let dotProduct = Double(vectorA.dx * vectorB.dx + vectorA.dy * vectorB.dy)
+        let magnitudeA = sqrt(Double(vectorA.dx * vectorA.dx + vectorA.dy * vectorA.dy))
+        let magnitudeB = sqrt(Double(vectorB.dx * vectorB.dx + vectorB.dy * vectorB.dy))
+        
+        // Guard against zero-length vectors
+        guard magnitudeA > 0, magnitudeB > 0 else { return 0 }
+        
+        // Cosine of the angle
+        let cosAngle = dotProduct / (magnitudeA * magnitudeB)
+        // Clamp to [-1, 1] to avoid NaN from rounding errors
+        let clamped = min(max(cosAngle, -1.0), 1.0)
+        // Compute angle in radians and convert to degrees
+        let angleRadians = acos(clamped)
+        return angleRadians * 180.0 / .pi
+    }
+
+    /// Calculates the spatial angle (in degrees) at `vertex` formed by `pointA–vertex–pointB` in 3D.
+    /// - Parameters:
+    ///   - pointA: First 3D point defining the angle.
+    ///   - vertex: The vertex 3D point where the angle is measured.
+    ///   - pointB: Second 3D point defining the angle.
+    /// - Returns: Angle in degrees between the vectors `pointA - vertex` and `pointB - vertex`.
+    static func calculateAngle3D(
+        pointA: SIMD3<Float>,
+        vertex: SIMD3<Float>,
+        pointB: SIMD3<Float>
+    ) -> Double {
+        // Create vectors from vertex to each point
+        let vectorA = pointA - vertex
+        let vectorB = pointB - vertex
+        
+        // Dot product and magnitudes
+        let dotProduct = simd_dot(vectorA, vectorB)
+        let magnitudeA = simd_length(vectorA)
+        let magnitudeB = simd_length(vectorB)
+        
+        // Guard against zero-length vectors
+        guard magnitudeA > 0, magnitudeB > 0 else { return 0 }
+        
+        // Cosine of the angle
+        let cosAngle = dotProduct / (magnitudeA * magnitudeB)
+        // Clamp to [-1, 1]
+        let clamped = min(max(Double(cosAngle), -1.0), 1.0)
+        // Compute angle in radians and convert to degrees
+        let angleRadians = acos(clamped)
+        return angleRadians * 180.0 / .pi
+    }
+}
+

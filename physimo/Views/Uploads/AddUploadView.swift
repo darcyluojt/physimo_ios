@@ -3,6 +3,7 @@ import PhotosUI
 
 struct AddUploadView: View {
     @Environment(\.presentationMode) private var presentationMode
+    @StateObject private var viewModel = UploadViewModel()
     @State private var selectedItem: PhotosPickerItem? = nil
     @State private var selectedImage: UIImage? = nil
     @State private var processingResult: String? = nil
@@ -31,7 +32,7 @@ struct AddUploadView: View {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFit()
-                        .frame(height: 400)
+                        .frame(height: 300)
                 }
                 
                 // Status message
@@ -130,10 +131,11 @@ struct AddUploadView: View {
         Task {
             do {
                 // 1️⃣ Call process() and handle its throwable nature
-                let (maybe2D, maybe3D) = try await processor.process(image: image)
+                let (maybe2D, maybe3D, maybemp) = try await processor.process(image: image)
+                let(maybe_mp_2d, mapbe_mp_3d) = maybemp!
                 let uploadId = UUID()
                 var newMetrics: [Metric] = []
-                
+//                Calculate metrics from apple 3d poses coordiantes
                 if let pose3D = maybe3D {
                     let metrics3D = MetricsCalculator.calculateKneeAngles(
                         from: pose3D,
@@ -145,7 +147,7 @@ struct AddUploadView: View {
                 } else {
                     print("No 3D pose detected")
                 }
-                
+//                Calculate metrics from apple 2d poses coordiantes
                 if let pose2D = maybe2D {
                     let metrics2D = MetricsCalculator.calculateKneeAngles2D(
                         from: pose2D,
@@ -158,8 +160,6 @@ struct AddUploadView: View {
                     print("No 2D pose detected")
                 }
             
-                
-                
                 
                 
                 // 6️⃣ Store/update your metrics
