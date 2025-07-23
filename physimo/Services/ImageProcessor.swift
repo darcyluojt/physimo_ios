@@ -47,7 +47,7 @@ class ImageProcessor {
         return try await vision3D.detect3dPoses(in: cgImage)
     }
     
-    typealias MediaPipePoseResult = (landmarks2D: [NormalizedLandmark], landmarks3D: [Landmark])
+//    typealias MediaPipePoseResult = (landmarks2D: [NormalizedLandmark], landmarks3D: [Landmark])
 
     
     private func detectMediaPipe(image: MPImage) -> MediaPipePoseResult? {
@@ -64,14 +64,14 @@ class ImageProcessor {
             print("⚠️ MediaPipe initialization failed")
             return nil
         }
-        guard let result = landmarker.detect(image: image),
-              let poselandmark2D = result.poseLandmarkerResults.first?.landmarks.first,
-              let poselandmark3D = result.poseLandmarkerResults.first?.worldLandmarks.first else {
+        guard let result = landmarker.detect(image: image) else {
+//              let poselandmark2D = result.poseLandmarkerResults.first?.landmarks.first,
+//              let poselandmark3D = result.poseLandmarkerResults.first?.worldLandmarks.first else {
             print("⚠️ MediaPipe detection failed")
             return nil
               }
 
-        return (poselandmark2D, poselandmark3D)
+        return result
         
         
         //        /// Calls the MediaPipeProcessor

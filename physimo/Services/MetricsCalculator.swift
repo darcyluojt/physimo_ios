@@ -4,131 +4,188 @@ import simd
 
 struct MetricsCalculator {
     static func calculateKneeAngles(
-        from result: DetectionResult,
+        fromApple3D result: DetectionResult,
         uploadId: UUID,
         archetypes: [Archetype] = Archetype.all,
         source: Metric.Source
     ) -> [Metric] {
+        return calculate(
+            uploadId: uploadId,
+            archetypes: archetypes,
+            source: source,
+            jointCoordsList: archetypes.map { fetchApple3DJoints(from: result, archetype: $0) },
+            jointConfidencesList: nil,
+            angleFunc: AngleCalculationHelper.calculateAngle3D
+        )
+    }
+    
+    static func calculateKneeAngles(
+        fromMP3D landmarks: [SIMD3<Float>],
+        confidenceList: [Double]?,
+        uploadId: UUID,
+        archetypes: [Archetype] = Archetype.all,
+        source: Metric.Source
+    ) -> [Metric] {
+        let pairs: [([SIMD3<Float>], [Double]?)] = archetypes.map {
+            fetchMP3DJoints(from: landmarks, confidenceList: confidenceList, archetype: $0)
+        }
+        let jointGroups = pairs.map {$0.0}
+        let confidenceGroups : [[Double]]? = confidenceList != nil
+            ? pairs.map { $0.1 ?? [0.0, 0.0, 0.0] } // default fallback if needed
+            : nil
+        return calculate(
+            uploadId: uploadId,
+            archetypes: archetypes,
+            source: source,
+            jointCoordsList: jointGroups,
+            jointConfidencesList: confidenceGroups,
+            angleFunc: AngleCalculationHelper.calculateAngle3D
+        )
+    }
+    
+    static func CalculateKneeAngles2D(
+        fromApple2D result: DetectionResult2D,
+        uploadId: UUID,
+        archetypes: [Archetype] = Archetype.all,
+        source: Metric.Source
+    ) -> [Metric] {
+        let pairs: [([CGPoint], [Double]?)] = archetypes.map {
+            fetchApple2DJoints(from: result, archetype: $0)
+        }
+        let jointGroups = pairs.map {$0.0}
+        let confidenceGroups = pairs.map { $0.1 ?? [0.0, 0.0, 0.0] }
+        return calculate(
+            uploadId: uploadId,
+            archetypes: archetypes,
+            source: source,
+            jointCoordsList: jointGroups,
+            jointConfidencesList: confidenceGroups,
+            angleFunc: AngleCalculationHelper.calculateAngle2D
+        )
+    }
+    
+    static func CalculateKneeAngles2D(
+        fromMP2D points: [CGPoint],
+        confidenceList: [Double]?,
+        uploadId: UUID,
+        archetypes: [Archetype] = Archetype.all,
+        source: Metric.Source
+    ) -> [Metric] {
+        let pairs: [([CGPoint], [Double]?)] = archetypes.map {
+            fetchMediaPipe2DJoints(from: points, confidenceList: confidenceList, archetype: $0)
+        }
+        let jointGroups = pairs.map {$0.0}
+        let confidenceGroups : [[Double]]? = confidenceList != nil
+            ? pairs.map { $0.1 ?? [0.0, 0.0, 0.0] } // default fallback if needed
+            : nil
+        return calculate(
+            uploadId: uploadId,
+            archetypes: archetypes,
+            source: source,
+            jointCoordsList: jointGroups,
+            jointConfidencesList: confidenceGroups,
+            angleFunc: AngleCalculationHelper.calculateAngle2D
+        )
+    }
+    
+    
+    private static func calculate<T>(
+        uploadId: UUID,
+        archetypes: [Archetype],
+        source: Metric.Source,
+        jointCoordsList: [[T]],
+        jointConfidencesList: [[Double]]? = nil,
+        angleFunc: (T, T, T) -> Double
+    ) -> [Metric] {
         var metrics: [Metric] = []
-        if source == .HumanBodyPose3DObservation {
-            let allJoints = result.allJoints(),
-        } else {
-            let landmarks = result.poselandmark3D
-            
-        
-        let archetypes = archetypes.filter { $0.name == "knee-angle" }
-        for archetype in archetypes {
-            let keys = archetype.joints
-            guard
-                let parentPoint = allJoints[keys[0]],
-                let pivotPoint = allJoints[keys[1]],
-                let childPoint = allJoints[keys[2]]
-            else { continue }
-            
-            let parentPos = parentPoint.position[3].xyz
-            let pivotPos  = pivotPoint.position[3].xyz
-            let childPos  = childPoint.position[3].xyz
-            
-            
-            let v1 = parentPos - pivotPos
-            let v2 = childPos - pivotPos
-            
-            
-            let cosθ = simd_dot(simd_normalize(v1), simd_normalize(v2))
-            let clamped = simd_clamp(cosθ, -1.0, 1.0)
-            let angleDeg = acos(clamped) * 180 / .pi
-            
-            
+        for (index, archetype) in archetypes.enumerated() {
+            let coords = jointCoordsList[index]
+            guard coords.count == 3 else { continue }
+            let angle = angleFunc(coords[0], coords[1], coords[2])
+            let accuracy: Double? = jointConfidencesList?[index].min()
             let metric = Metric(
                 id: UUID(),
                 uploadId: uploadId,
                 archetype: archetype,
                 source: source,
-                value: Double(180 - angleDeg),
-                accuracy: 1.0
+                value: angle,
+                accuracy: accuracy // Accuracy can be calculated if needed
             )
             metrics.append(metric)
         }
         return metrics
     }
     
-    static func calculateKneeAngles2D (
-        from result: DetectionResult2D,
-        uploadId: UUID,
-        archetypes: [Archetype] = Archetype.all,
-        source: Metric.Source
-    ) -> [Metric] {
-        let allJoints = result.allJoints()
-        var metrics: [Metric] = []
-        
-        let archetypes = archetypes.filter { $0.name == "knee-angle" }
-        for archetype in archetypes {
-            let keys = archetype.joints
-            guard let parentName = HumanBodyPoseObservation.JointName(rawValue: keys[0].rawValue),
-                  let pivotName = HumanBodyPoseObservation.JointName(rawValue: keys[1].rawValue),
-                  let childName = HumanBodyPoseObservation.JointName(rawValue: keys[2].rawValue),
-                  let parent = allJoints[parentName],
-                  let pivot = allJoints[pivotName],
-                  let child = allJoints[childName]
-            else { continue }
-            let confidence = min(parent.confidence, pivot.confidence, child.confidence)
-            let v1 = simd_float2(Float(parent.location.x - pivot.location.x), Float(parent.location.y - pivot.location.y))
-            let v2 = simd_float2(Float(child.location.x - pivot.location.x), Float(child.location.y - pivot.location.y))
-
-            let cosθ = simd_dot(simd_normalize(v1), simd_normalize(v2))
-            let clamped = simd_clamp(cosθ, -1.0, 1.0)
-            let angleDeg = acos(clamped) * 180 / .pi
-            let metric = Metric(
-                            id: UUID(),
-                            uploadId: uploadId,
-                            archetype: archetype,
-                            source: source,
-                            value: Double(180 - angleDeg),
-                            accuracy: Double(confidence)
-                        )
-                        metrics.append(metric)
-                    }
-
-                    return metrics
-                }
-
-
-}
     
-extension SIMD4 where Scalar == Float {
-  /// Drop the w component and return the (x,y,z) vector.
-  var xyz: SIMD3<Float> {
-    return SIMD3<Float>(x, y, z)
-  }
+    private static func fetchApple3DJoints(
+        from result: DetectionResult,
+        archetype: Archetype
+    ) -> [SIMD3<Float>] {
+        // allJoints returns a map of JointName to Joint3D
+        let jointsDict = result.allJoints()
+        return archetype.joints.compactMap { ref in
+            guard let name = ref.apple3dJoint,
+                  let joint3D = jointsDict[name] else { return .zero }
+            let t = joint3D.position.columns.3
+            print("Apple 3D Joint \(name) position: \(t)")
+            return SIMD3<Float>(t.x, t.y, t.z)
+        }
+    }
+    
+    private static func fetchMP3DJoints(
+        from landmarks: [SIMD3<Float>],
+        confidenceList: [Double]?,
+        archetype: Archetype
+    ) -> ([SIMD3<Float>],[Double]?) {
+        var coords: [SIMD3<Float>] = []
+        var confidences: [Double] = []
+        for ref in archetype.joints {
+            let idx = ref.mediaPipeIndex!
+            coords.append(landmarks[idx])
+            confidences.append(confidenceList?[idx] ?? 0.0)
+            print("MP3D landmark: \(idx), \(landmarks[idx]), \(confidenceList?[idx] ?? 0.0)")
+        }
+        
+        return (coords, confidences)
+    }
+    
+    private static func fetchApple2DJoints(
+        from observation: DetectionResult2D,
+        archetype: Archetype
+    ) -> ([CGPoint],[Double]?) {
+        // `allJoints()` returns a dictionary mapping JointName to VNRecognizedPoint
+        let allJoints = observation.allJoints()
+        var locations: [CGPoint] = []
+        var confidenceList: [Double] = []
+        for ref in archetype.joints {
+            let name = ref.apple2dJoint!
+            let recognizedPoint = allJoints[name]!
+            locations.append(recognizedPoint.location.cgPoint)
+            confidenceList.append(Double(recognizedPoint.confidence))
+            print("App2D landmark: \(name), \(recognizedPoint.location.cgPoint), \(Double(recognizedPoint.confidence))")
+        }
+        return (locations, confidenceList)
+    }
+    
+    private static func fetchMediaPipe2DJoints(
+        from points: [CGPoint],
+        confidenceList: [Double]?,
+        archetype: Archetype
+    ) -> ([CGPoint],[Double]?) {
+        var coords: [CGPoint] = []
+        var visibilities: [Double] = []
+        for ref in archetype.joints {
+            let idx = ref.mediaPipeIndex!
+            coords.append(points[idx])
+            visibilities.append(confidenceList?[idx] ?? 0.0)
+            print("MP2D landmark: \(idx), \(points[idx]), \(confidenceList?[idx] ?? 0.0)")
+        }
+        return (coords, confidenceList != nil ? visibilities : nil)
+    }
 }
-
-//.rightLeg, .leftLeg
-// let recognizedPoints = try observation.recognizedPoints(.rightLeg)
-//pointInImage(_:)
- 
-
-//class HumanBodyPose3DDetector: NSObject, ObservableObject {
-//    
-//    @Published var humanObservation: VNHumanBodyPose3DObservation? = nil
-//    var fileURL: URL? = URL(string: "")
-//    
-//    public func calculatedLocalAngleToParent(joint: VNHumanBodyPose3DObservation.JointName) -> simd_float3 {
-//        var angleVector: simd_float3 = simd_float3()
-//        do {
-//            if let observation = self.humanObservation {
-//                let recognizedPoint = try observation.recognizedPoint(joint)
-//                let childPosition = recognizedPoint.localPosition
-//                let translationC = childPosition.translationVector
-////                / Rotation for x, y, z
-//                // Rotate 90 from default orientation of node, yaw and pitch connect child to parent
-//                let pitch = (Float.pi / 2)
-//                let yaw = acos(translationC.z / simd_length(translationC) )
-//                let roll = atan2((translationC.y), (translationC.x))
-//                angleVector = simd_float3(pitch, yaw, roll)
-//            }
-//        } catch {
-//            print("Unable to return point: \(error).")
-//    }
-//        return angleVector
+//extension SIMD4 where Scalar == Float {
+//  /// Drop the w component and return the (x,y,z) vector.
+//  var xyz: SIMD3<Float> {
+//    return SIMD3<Float>(x, y, z)
+//  }
 //}
-

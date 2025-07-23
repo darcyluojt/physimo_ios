@@ -32,15 +32,11 @@ struct AngleCalculationHelper {
         let clamped = min(max(cosAngle, -1.0), 1.0)
         // Compute angle in radians and convert to degrees
         let angleRadians = acos(clamped)
-        return angleRadians * 180.0 / .pi
+        let angleDegrees = angleRadians * 180.0 / .pi
+        return 180 - angleDegrees
     }
 
-    /// Calculates the spatial angle (in degrees) at `vertex` formed by `pointA–vertex–pointB` in 3D.
-    /// - Parameters:
-    ///   - pointA: First 3D point defining the angle.
-    ///   - vertex: The vertex 3D point where the angle is measured.
-    ///   - pointB: Second 3D point defining the angle.
-    /// - Returns: Angle in degrees between the vectors `pointA - vertex` and `pointB - vertex`.
+
     static func calculateAngle3D(
         pointA: SIMD3<Float>,
         vertex: SIMD3<Float>,
@@ -64,7 +60,8 @@ struct AngleCalculationHelper {
         let clamped = min(max(Double(cosAngle), -1.0), 1.0)
         // Compute angle in radians and convert to degrees
         let angleRadians = acos(clamped)
-        return angleRadians * 180.0 / .pi
+        let angleDegrees = angleRadians * 180.0 / .pi
+        return 180 - angleDegrees
     }
 }
 

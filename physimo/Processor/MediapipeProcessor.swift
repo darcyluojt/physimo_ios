@@ -62,7 +62,7 @@ class PoseLandmarkerService: NSObject {
             return poseLandmarkerService
         }
     
-    func detect(image: MPImage) -> ResultBundle? {
+    func detect(image: MPImage) -> MediaPipePoseResult? {
         do {
             let startDate = Date()
             guard let result = try poseLandmarker?.detect(image: image) else {
@@ -70,7 +70,9 @@ class PoseLandmarkerService: NSObject {
             }
             let inferenceTime = Date().timeIntervalSince(startDate) * 1000
             print("inference time: \(inferenceTime) ms")
-            return ResultBundle(inferenceTime: inferenceTime, poseLandmarkerResults: [result])
+            let landmark = result.landmarks.first!
+            let worldLandmark = result.worldLandmarks.first!
+            return MediaPipePoseResult(landmarks2D: landmark, landmarks3D: worldLandmark)
         } catch {
             print(error)
             return nil
@@ -85,10 +87,22 @@ class PoseLandmarkerService: NSObject {
         
         return generator
     }
-    
-    struct ResultBundle {
-        let inferenceTime: Double
-        let poseLandmarkerResults: [PoseLandmarkerResult]
-        var size: CGSize = .zero
+}
+
+struct MediaPipePoseResult {
+    let landmarks2D: [NormalizedLandmark]
+    let landmarks3D: [Landmark]
+}
+
+extension Landmark {
+    var simdVector: SIMD3<Float> {
+        return SIMD3<Float>(x, y, z)
     }
 }
+
+extension NormalizedLandmark {
+    var cgPoint: CGPoint {
+        return CGPoint(x: CGFloat(x), y: CGFloat(y))
+    }
+}
+

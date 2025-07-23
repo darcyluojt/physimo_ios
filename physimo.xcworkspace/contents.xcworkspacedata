@@ -4,6 +4,119 @@
    <FileRef
       location = "group:physimo.xcodeproj">
    </FileRef>
+   <Group
+      location = "group:physimo"
+      name = "physimo">
+      <FileRef
+         location = "container:physimo.xcodeproj">
+      </FileRef>
+      <Group
+         location = "group:ViewModels"
+         name = "ViewModels">
+         <FileRef
+            location = "group:ViewController.swift">
+         </FileRef>
+         <FileRef
+            location = "group:UploadViewModel.swift">
+         </FileRef>
+      </Group>
+      <Group
+         location = "group:Processor"
+         name = "Processor">
+         <FileRef
+            location = "group:MediapipeProcessor.swift">
+         </FileRef>
+         <FileRef
+            location = "group:Vision2DProcessor.swift">
+         </FileRef>
+         <FileRef
+            location = "group:Vision3DProcessor.swift">
+         </FileRef>
+      </Group>
+      <FileRef
+         location = "group:Assets.xcassets">
+      </FileRef>
+      <Group
+         location = "group:Models"
+         name = "Models">
+         <FileRef
+            location = "group:Metric.swift">
+         </FileRef>
+         <FileRef
+            location = "group:User.swift">
+         </FileRef>
+         <FileRef
+            location = "group:Archetype.swift">
+         </FileRef>
+         <FileRef
+            location = "group:Tab.swift">
+         </FileRef>
+         <FileRef
+            location = "group:Upload.swift">
+         </FileRef>
+         <FileRef
+            location = "group:pose_landmarker_heavy.task">
+         </FileRef>
+      </Group>
+      <Group
+         location = "group:Extensions"
+         name = "Extensions">
+         <FileRef
+            location = "group:ImagePropertyOrientation.swift">
+         </FileRef>
+      </Group>
+      <FileRef
+         location = "group:physimoApp.swift">
+      </FileRef>
+      <Group
+         location = "group:Views"
+         name = "Views">
+         <Group
+            location = "group:Metrics"
+            name = "Metrics">
+            <FileRef
+               location = "group:MetricsView.swift">
+            </FileRef>
+         </Group>
+         <Group
+            location = "group:Uploads"
+            name = "Uploads">
+            <FileRef
+               location = "group:AddUploadView.swift">
+            </FileRef>
+         </Group>
+         <Group
+            location = "group:shared"
+            name = "shared">
+            <FileRef
+               location = "group:MenuBarView.swift">
+            </FileRef>
+         </Group>
+         <FileRef
+            location = "group:MainView.swift">
+         </FileRef>
+      </Group>
+      <Group
+         location = "group:Helpers"
+         name = "Helpers">
+         <FileRef
+            location = "group:JointAngleCalculator.swift">
+         </FileRef>
+      </Group>
+      <Group
+         location = "group:Services"
+         name = "Services">
+         <FileRef
+            location = "group:UploadStore.swift">
+         </FileRef>
+         <FileRef
+            location = "group:ImageProcessor.swift">
+         </FileRef>
+         <FileRef
+            location = "group:MetricsCalculator.swift">
+         </FileRef>
+      </Group>
+   </Group>
    <FileRef
       location = "group:Pods/Pods.xcodeproj">
    </FileRef>

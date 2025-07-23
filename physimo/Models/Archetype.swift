@@ -6,8 +6,13 @@ enum BodySide: String, Codable { case left, right }
 enum Status:   String, Codable { case healthy, injured }
 
 struct JointReference: Codable {
-    var appleJoint: HumanBodyPose3DObservation.JointName? // For Vision
+    var apple3dJoint: HumanBodyPose3DObservation.JointName? // For Vision
+    var apple2dJoint: HumanBodyPoseObservation.JointName?
     var mediaPipeIndex: Int?                              // For MediaPipe
+}
+
+enum Side: String, Codable, Equatable, Hashable {
+    case left, right
 }
 
 struct Archetype: Identifiable, Codable {
@@ -21,14 +26,6 @@ struct Archetype: Identifiable, Codable {
 }
 
 
-enum Joints: String, Codable {
-    case hip
-    case knee
-    case ankle
-    case shoulder
-    case elbow
-}
-
 
 extension Archetype {
     static let all: [Archetype] = [
@@ -38,9 +35,9 @@ extension Archetype {
             side: .right,
             slug: "right-knee-angle",
             joints: [
-                JointReference(appleJoint: .rightHip,  mediaPipeIndex: 24),
-                JointReference(appleJoint: .rightKnee, mediaPipeIndex: 26),
-                JointReference(appleJoint: .rightAnkle, mediaPipeIndex: 28)
+                JointReference(apple3dJoint: .rightHip,  apple2dJoint: .rightHip, mediaPipeIndex: 24),
+                JointReference(apple3dJoint: .rightKnee, apple2dJoint: .rightKnee, mediaPipeIndex: 26),
+                JointReference(apple3dJoint: .rightAnkle, apple2dJoint: .rightAnkle, mediaPipeIndex: 28)
             ],
             status: .injured
         ),
@@ -50,9 +47,9 @@ extension Archetype {
             side: .left,
             slug: "left-knee-angle",
             joints: [
-                JointReference(appleJoint: .leftHip,  mediaPipeIndex: 23),
-                JointReference(appleJoint: .leftKnee, mediaPipeIndex: 25),
-                JointReference(appleJoint: .leftAnkle, mediaPipeIndex: 27)
+                JointReference(apple3dJoint: .leftHip,  apple2dJoint: .leftHip, mediaPipeIndex: 23),
+                JointReference(apple3dJoint: .leftKnee, apple2dJoint: .leftKnee, mediaPipeIndex: 25),
+                JointReference(apple3dJoint: .leftAnkle, apple2dJoint: .leftAnkle, mediaPipeIndex: 27)
             ],
             status: .healthy
         )
