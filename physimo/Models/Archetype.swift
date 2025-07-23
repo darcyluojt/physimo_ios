@@ -5,35 +5,40 @@ import Vision
 enum BodySide: String, Codable { case left, right }
 enum Status:   String, Codable { case healthy, injured }
 
+struct JointReference: Codable {
+    var apple3dJoint: HumanBodyPose3DObservation.JointName? // For Vision
+    var apple2dJoint: HumanBodyPoseObservation.JointName?
+    var mediaPipeIndex: Int?                              // For MediaPipe
+}
+
+enum Side: String, Codable, Equatable, Hashable {
+    case left, right
+}
+
 struct Archetype: Identifiable, Codable {
     let id: UUID
 //    let userId: UUID
     let name: String
     let side: BodySide
     let slug: String
-    let joints: [HumanBodyPose3DObservation.JointName]
+    let joints: [JointReference]
     var status: Status
 }
 
 
-enum Joints: String, Codable {
-    case hip
-    case knee
-    case ankle
-    case shoulder
-    case elbow
-}
-
 
 extension Archetype {
-    /// All the built-in archetypes your app ships with
     static let all: [Archetype] = [
         Archetype(
             id: UUID(),
             name: "knee-angle",
             side: .right,
             slug: "right-knee-angle",
-            joints: [.rightHip, .rightKnee, .rightAnkle],
+            joints: [
+                JointReference(apple3dJoint: .rightHip,  apple2dJoint: .rightHip, mediaPipeIndex: 24),
+                JointReference(apple3dJoint: .rightKnee, apple2dJoint: .rightKnee, mediaPipeIndex: 26),
+                JointReference(apple3dJoint: .rightAnkle, apple2dJoint: .rightAnkle, mediaPipeIndex: 28)
+            ],
             status: .injured
         ),
         Archetype(
@@ -41,9 +46,13 @@ extension Archetype {
             name: "knee-angle",
             side: .left,
             slug: "left-knee-angle",
-            joints: [.leftHip, .leftKnee, .leftAnkle],
+            joints: [
+                JointReference(apple3dJoint: .leftHip,  apple2dJoint: .leftHip, mediaPipeIndex: 23),
+                JointReference(apple3dJoint: .leftKnee, apple2dJoint: .leftKnee, mediaPipeIndex: 25),
+                JointReference(apple3dJoint: .leftAnkle, apple2dJoint: .leftAnkle, mediaPipeIndex: 27)
+            ],
             status: .healthy
-        ),
-        // … any other default archetypes …
+        )
     ]
 }
+
