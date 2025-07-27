@@ -49,7 +49,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Assets.xcassets,
-				Models/Upload.swift,
 			);
 			target = A4AF93712E22D5A5001207D5 /* physimo */;
 		};
