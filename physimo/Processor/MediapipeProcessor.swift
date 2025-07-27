@@ -39,16 +39,19 @@ class MediaPipeProcessor: ImageProcessor {
           minPoseDetectionConfidence: Float = 0.5,
           minPosePresenceConfidence: Float = 0.5,
           minTrackingConfidence: Float = 0.5) {
+        
+        guard let modelPath = modelPath ?? Bundle.main.path(forResource: "pose_landmarker_heavy", ofType: "task") else {
+            print("Model path is missing.")
+            return nil
+        }
+
         let options = PoseLandmarkerOptions()
+        options.baseOptions.modelAssetPath = modelPath
         options.runningMode = .image
         options.numPoses = numPoses
         options.minPoseDetectionConfidence = minPoseDetectionConfidence
         options.minPosePresenceConfidence = minPosePresenceConfidence
         options.minTrackingConfidence = minTrackingConfidence
-        guard let path = modelPath ?? Bundle.main.path(forResource: "pose_landmarker_heavy", ofType: "task") else {
-            print("Model path is missing.")
-            return nil
-        }
 
         do {
             poseLandmarker = try PoseLandmarker(options: options)
@@ -76,7 +79,7 @@ class MediaPipeProcessor: ImageProcessor {
                 let position2D = SIMD2<Float>(landmark2D.x, landmark2D.y)
                 mapped[bodyPart] = BodyLandmark(position3D: position3D, position2D: position2D)
             }
-
+            
             return ["default": BodyDetectionResult(landmarks: mapped)]
         } catch {
             print("Pose detection error:", error)
