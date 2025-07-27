@@ -6,14 +6,10 @@ import PhotosUI
 class UploadViewModel: ObservableObject {
     @Published var selectedImage: UIImage?
     @Published var processingResult: String = ""
-    @Published var metrics: [Metric] = []
+    @Published var metrics: [JointMetric] = []
 
-    private let imageProcessor = ImageProcessor()
-    private let uploadStore: UploadStore
+    private let imageProcessor = ImageProcessorModel()
 
-    init(uploadStore: UploadStore = .shared) {
-        self.uploadStore = uploadStore
-    }
 
     func handlePickedItem(_ item: PhotosPickerItem?) {
         Task { await processPicked(item) }
@@ -30,17 +26,10 @@ class UploadViewModel: ObservableObject {
         selectedImage = image
         processingResult = "Processing image..."
 
-        do {
-             let result = try await imageProcessor.process(image: image)
-          let uploadId = UUID()
-          let calculated = calculatedMetrics(from: result, uploadId: uploadId)
-          self.metrics = calculated
-          processingResult = calculated.isEmpty ? "No metrics found." : "Calculated \(calculated.count) metrics."
-          let upload = StoredUpload(id: uploadId, image: image, metrics: calculated)
-          uploadStore.save(upload)
-        } catch {
-          processingResult = "Failed to process image."
-        }
+        let result = try await imageProcessor.process(image: image)
+        self.metrics  = calculatedMetrics(from: result)
+        processingResult = self.metrics.count == 0 ? "No metrics found." : "Calculated \(self.metrics.count) metrics."
+
     }
 
     private func resetState() {
@@ -57,56 +46,14 @@ class UploadViewModel: ObservableObject {
         return image
     }
 
-    private func calculatedMetrics(
-      from result: (
-        pose2D: DetectionResult2D?,
-        pose3D: DetectionResult?,
-        mpPose: MediaPipePoseResult?
-      ),
-      uploadId: UUID
-    ) -> [Metric] {
-        var allMetrics: [Metric] = []
-        if let apple3D = result.pose3D {
-          let apple3DMetrics = MetricsCalculator.calculateKneeAngles(
-            fromApple3D: apple3D,
-            uploadId: uploadId,
-            archetypes: Archetype.all,
-            source: .HumanBodyPose3DObservation
-          )
-          allMetrics.append(contentsOf: apple3DMetrics)
-        }
-        if let mp3D = result.mpPose?.landmarks3D {
-            let jointVectors = mp3D.map { $0.simdVector }
-            let confidenceList = mp3D.map { Double(truncating: $0.visibility ?? 0) }
-            let mp3dMetrics = MetricsCalculator.calculateKneeAngles(
-            fromMP3D: jointVectors,
-            confidenceList: confidenceList,
-            uploadId: uploadId,
-            archetypes: Archetype.all,
-            source: .MediaPipePoseWorldLandmarks
-            )
-          allMetrics.append(contentsOf: mp3dMetrics)
-        }
-        if let apple2D = result.pose2D {
-          let apple2DMetrics = MetricsCalculator.CalculateKneeAngles2D(
-            fromApple2D: apple2D,
-            uploadId: uploadId,
-            archetypes: Archetype.all,
-            source: .HumanBodyPoseObservation
-          )
-          allMetrics.append(contentsOf: apple2DMetrics)
-        }
-        if let mp2D = result.mpPose?.landmarks2D {
-            let jointPoints = mp2D.map { $0.cgPoint }
-            let confidenceList = mp2D.map { Double(truncating: $0.visibility ?? 0) }
-          let mp2dMetrics = MetricsCalculator.CalculateKneeAngles2D(
-            fromMP2D: jointPoints,
-            confidenceList: confidenceList,
-            uploadId: uploadId,
-            archetypes: Archetype.all,
-            source: .MediaPipePoseLandmarks
-          )
-          allMetrics.append(contentsOf: mp2dMetrics)
+    private func calculatedMetrics(from result: [String: BodyDetectionResult]) -> [JointMetric] {
+        var allMetrics: [JointMetric] = []
+
+        for (modelName, detectionResult) in result {
+            for config in JointConfiguration.all {
+                let metric = JointMetric(from: config, modelName: modelName, detectionResult: detectionResult)
+                allMetrics.append(metric)
+            }
         }
 
         return allMetrics
