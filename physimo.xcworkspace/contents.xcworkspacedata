@@ -14,9 +14,6 @@
          location = "group:ViewModels"
          name = "ViewModels">
          <FileRef
-            location = "group:ViewController.swift">
-         </FileRef>
-         <FileRef
             location = "group:UploadViewModel.swift">
          </FileRef>
       </Group>
@@ -41,18 +38,6 @@
          name = "Models">
          <FileRef
             location = "group:Metric.swift">
-         </FileRef>
-         <FileRef
-            location = "group:User.swift">
-         </FileRef>
-         <FileRef
-            location = "group:Archetype.swift">
-         </FileRef>
-         <FileRef
-            location = "group:Tab.swift">
-         </FileRef>
-         <FileRef
-            location = "group:Upload.swift">
          </FileRef>
          <FileRef
             location = "group:pose_landmarker_heavy.task">
@@ -94,6 +79,9 @@
          </Group>
          <FileRef
             location = "group:MainView.swift">
+         </FileRef>
+         <FileRef
+            location = "group:ImageAnalysisView.swift">
          </FileRef>
       </Group>
       <Group
