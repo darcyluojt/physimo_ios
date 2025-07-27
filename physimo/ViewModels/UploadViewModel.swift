@@ -27,10 +27,8 @@ class UploadViewModel: ObservableObject {
         processingResult = "Processing image..."
 
         let result = try await imageProcessor.process(image: image)
-        print("Number of detection results:", result)
         self.metrics  = calculatedMetrics(from: result)
         processingResult = self.metrics.count == 0 ? "No metrics found." : "Calculated \(self.metrics.count) metrics."
-        print(processingResult)
     }
 
     private func resetState() {

@@ -19,10 +19,8 @@ class ImageProcessorModel {
     
     func process(image: UIImage) -> [String: BodyDetectionResult] {
         var results: [String: BodyDetectionResult] = [:]
-        for (key, processor) in processors {
-            if let result = processor.process(image: image)[key] {
-                results[key] = result
-            }
+        for (_, processor) in processors {
+            results.merge(processor.process(image: image)) { _, new in new }
         }
         return results
     }
