@@ -32,17 +32,10 @@ struct AddUploadView: View {
             if !viewModel.metrics.isEmpty {
                 List(viewModel.metrics) { metric in
                     HStack {
-                        Text("\(metric.source.displayName)")
+                        Text("\(metric.id)")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
-                        Text(metric.archetype.side.rawValue
-                                .capitalized)
-                        Text("\(metric.value, specifier: "%.1f")°")
-                        if let acc = metric.accuracy {
-                            Text("Accuracy: \(acc, specifier: "%.2f")")
-                                .font(.caption)
-                                .foregroundColor(.gray)
-                        }
+                        Text("\(metric.detectedAngle ?? 0, specifier: "%.1f")°")
                     }
                 }
                 .frame(height: 350)
