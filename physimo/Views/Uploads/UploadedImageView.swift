@@ -21,17 +21,25 @@ struct UploadedImageView: View {
                             let displayHeight = min(containerHeight, containerWidth / imageAspectRatio)
                             let displayWidth = min(containerWidth, displayHeight * imageAspectRatio)
                             
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: displayWidth, height: displayHeight)
+                            let _ = logImageViewDebug(
+                                image: uiImage,
+                                aspectRatio: imageAspectRatio,
+                                container: CGSize(width: containerWidth, height: containerHeight),
+                                displaySize: CGSize(width: displayWidth, height: displayHeight)
+                            )
                             
-                            Canvas { context, size in
-                                ImageAnalyser.drawOverlays(
-                                    in: context,
-                                    size: CGSize(width: displayWidth, height: displayHeight),
-                                    for: uiImage,
-                                    fromMP2D: landmarks)
+                            ZStack {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFit()
+                                
+                                Canvas { context, size in
+                                    ImageAnalyser.drawOverlays(
+                                        in: context,
+                                        size: size,
+                                        for: uiImage,
+                                        fromMP2D: landmarks)
+                                }
                             }
                             .frame(width: displayWidth, height: displayHeight)
                         } else {
@@ -42,29 +50,115 @@ struct UploadedImageView: View {
                     
                     // Metrics section - scrollable below image
                     if !metrics.isEmpty {
-                        LazyVStack {
-                            ForEach(metrics, id: \.id) { metric in
-                                HStack {
-                                    Text("\(metric.source.displayName)")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    Text(metric.archetype.side.rawValue.capitalized)
-                                    Text("\(metric.value, specifier: "%.1f")°")
-                                    if let acc = metric.accuracy {
-                                        Text("Accuracy: \(acc, specifier: "%.2f")")
-                                            .font(.caption)
-                                            .foregroundColor(.gray)
-                                    }
-                                }
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Joint Angle Measurements")
+                                .font(.headline)
                                 .padding(.horizontal)
-                                .padding(.vertical, 8)
-                                Divider()
-                            }
+                            
+                            // Create metrics grid
+                            MetricsGridView(metrics: metrics)
+                                .padding(.horizontal)
                         }
                         .padding(.top, 20)
                     }
                 }
             }
         }
+    }
+    
+    private func logImageViewDebug(image: UIImage, aspectRatio: CGFloat, container: CGSize, displaySize: CGSize) -> Void {
+        print("📱 UploadedImageView Debug:")
+        print("  UIImage.size: \(image.size)")
+        print("  UIImage.orientation: \(image.imageOrientation.rawValue)")
+        print("  Calculated aspect ratio: \(aspectRatio)")
+        print("  Container: \(container.width) x \(container.height)")
+        print("  Final display size: \(displaySize.width) x \(displaySize.height)")
+    }
+}
+
+struct MetricsGridView: View {
+    let metrics: [Metric]
+    
+    var body: some View {
+        let sources = Array(Set(metrics.map { $0.source })).sorted { $0.displayName < $1.displayName }
+        
+        VStack(spacing: 8) {
+            // Header row
+            HStack {
+                Text("Source")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                
+                Text("Left")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity)
+                
+                Text("Right")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity)
+            }
+            .padding(.vertical, 8)
+            .background(Color.gray.opacity(0.1))
+            .cornerRadius(8)
+            
+            // Data rows
+            ForEach(sources, id: \.self) { source in
+                HStack {
+                    // Source name
+                    Text(source.displayName)
+                        .font(.caption)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    // Left value
+                    if let leftMetric = metrics.first(where: { $0.source == source && $0.archetype.side == .left }) {
+                        VStack {
+                            Text("\(leftMetric.value, specifier: "%.1f")°")
+                                .font(.body)
+                            if let accuracy = leftMetric.accuracy {
+                                Text("(\(accuracy * 100, specifier: "%.0f")%)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                    } else {
+                        Text("—")
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity)
+                    }
+                    
+                    // Right value
+                    if let rightMetric = metrics.first(where: { $0.source == source && $0.archetype.side == .right }) {
+                        VStack {
+                            Text("\(rightMetric.value, specifier: "%.1f")°")
+                                .font(.body)
+                            if let accuracy = rightMetric.accuracy {
+                                Text("(\(accuracy * 100, specifier: "%.0f")%)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                    } else {
+                        Text("—")
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .padding(.vertical, 12)
+                .background(Color.clear)
+                
+                if source != sources.last {
+                    Divider()
+                }
+            }
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
     }
 }

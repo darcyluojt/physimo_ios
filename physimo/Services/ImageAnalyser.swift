@@ -28,13 +28,37 @@ class ImageAnalyser {
     ) {
         guard let landmarks = fromMP2D, !landmarks.isEmpty else { return }
         let analyser = ImageAnalyser()
+        
+        // Debug: Log image and display information
         let originalSize = analyser.imageSize(for: image)
+        print("🔍 ImageAnalyser Debug:")
+        print("  Image size: \(image.size)")
+        print("  Image orientation: \(image.imageOrientation.rawValue)")
+        print("  Calculated original size: \(originalSize)")
+        print("  Display canvas size: \(size)")
+        
         let widthRatio = size.width / originalSize.width
         let heightRatio = size.height / originalSize.height
         let scale = min(heightRatio, widthRatio)
-        let scaledSize = CGSize(width: originalSize.width * scale, height: originalSize.height * scale)
         
-        let overlays = analyser.poseOverlays(fromMP2D: landmarks, overlaySize: scaledSize)
+        print("  Width ratio: \(widthRatio), Height ratio: \(heightRatio)")
+        print("  Selected scale: \(scale)")
+        
+        // Calculate actual image display area within canvas
+        let scaledImageSize = CGSize(width: originalSize.width * scale, height: originalSize.height * scale)
+        let offsetX = (size.width - scaledImageSize.width) / 2
+        let offsetY = (size.height - scaledImageSize.height) / 2
+        
+        print("  Scaled image size: \(scaledImageSize)")
+        print("  Offset: (\(offsetX), \(offsetY))")
+        print("  First landmark: (\(landmarks[0].x), \(landmarks[0].y))")
+        
+        let overlays = analyser.poseOverlays(
+            fromMP2D: landmarks, 
+            overlaySize: scaledImageSize,
+            offset: CGPoint(x: offsetX, y: offsetY),
+            image: image
+        )
         
         // Draw each overlay using SwiftUI's GraphicsContext
         for overlay in overlays {
@@ -56,29 +80,58 @@ class ImageAnalyser {
     
     
     private func imageSize(for image: UIImage) -> CGSize {
-        switch image.imageOrientation {
-        case .up, .down, .left, .right:
-            return image.size
-        default:
-            return CGSize(width: image.size.width * image.scale,
-                          height: image.size.height * image.scale)
-        }
+        // Since SwiftUI displays the image using UIImage.size (orientation-corrected),
+        // we should use UIImage.size for consistent scaling calculations
+        return image.size
     }
     
     
     func poseOverlays(
         fromMP2D: [NormalizedLandmark],
         overlaySize: CGSize,
+        offset: CGPoint = .zero,
+        image: UIImage
 ) -> [PoseOverlay] {
         
         guard !fromMP2D.isEmpty else { return [] }
         let width = overlaySize.width
         let height = overlaySize.height
         
-        // Convert normalized landmarks to screen coordinates
+        print("🎯 PoseOverlays Debug:")
+        print("  Overlay size: \(overlaySize)")
+        print("  Offset: \(offset)")
+        print("  Image orientation: \(image.imageOrientation.rawValue)")
+        
+        // MediaPipe processes raw CGImage data without orientation correction
+        // We need to transform landmarks based on image orientation to match SwiftUI display
+        
+        let uiImageSize = image.size  // SwiftUI display dimensions
+        let cgImageSize = image.cgImage.map { CGSize(width: $0.width, height: $0.height) } ?? image.size
+        
         let dots: [CGPoint] = fromMP2D.map { landmark in
-            CGPoint(x: CGFloat(landmark.x) * width,
-                   y: CGFloat(landmark.y) * height)
+            let x = CGFloat(landmark.x)
+            let y = CGFloat(landmark.y)
+            
+            // Transform coordinates based on image orientation
+            let (transformedX, transformedY) = transformCoordinates(
+                x: x, y: y, 
+                orientation: image.imageOrientation,
+                cgImageSize: cgImageSize,
+                uiImageSize: uiImageSize,
+                displaySize: overlaySize
+            )
+            
+            // Apply offset for centering
+            return CGPoint(
+                x: transformedX + offset.x,
+                y: transformedY + offset.y
+            )
+        }
+        
+        print("  Sample transformed points:")
+        for i in 0..<min(3, dots.count) {
+            let original = fromMP2D[i]
+            print("    [\(i)] Original: (\(original.x), \(original.y)) -> Final: (\(dots[i].x), \(dots[i].y))")
         }
         
         // MediaPipe pose connections (based on the 33 landmark model)
@@ -105,6 +158,51 @@ class ImageAnalyser {
         return [overlay]
     }
     
-    
+    private func transformCoordinates(
+        x: CGFloat, 
+        y: CGFloat, 
+        orientation: UIImage.Orientation,
+        cgImageSize: CGSize,
+        uiImageSize: CGSize,
+        displaySize: CGSize
+    ) -> (CGFloat, CGFloat) {
+        // MediaPipe processes raw CGImage data and returns normalized coordinates (0-1)
+        // based on the raw pixel dimensions. We need to transform these to match
+        // the UIImage coordinate system that SwiftUI uses for display.
+        
+        // First, convert normalized coordinates to CGImage pixel coordinates
+        let cgX = x * cgImageSize.width
+        let cgY = y * cgImageSize.height
+        
+        // Then apply orientation transformation to get UIImage coordinate space
+        let (uiX, uiY): (CGFloat, CGFloat)
+        
+        switch orientation {
+        case .up:
+            // No transformation needed
+            uiX = cgX
+            uiY = cgY
+        case .right: // 90° clockwise (orientation 3)
+            // When rotated 90° CW: x' = height - y, y' = x
+            uiX = cgImageSize.height - cgY
+            uiY = cgX
+        case .down: // 180°
+            uiX = cgImageSize.width - cgX
+            uiY = cgImageSize.height - cgY
+        case .left: // 90° counter-clockwise
+            uiX = cgY
+            uiY = cgImageSize.width - cgX
+        default:
+            // For mirrored orientations, use base transformation
+            uiX = cgX
+            uiY = cgY
+        }
+        
+        // Finally, scale from UIImage coordinate space to display size
+        let displayX = (uiX / uiImageSize.width) * displaySize.width
+        let displayY = (uiY / uiImageSize.height) * displaySize.height
+        
+        return (displayX, displayY)
+    }
     
 }
