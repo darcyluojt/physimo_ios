@@ -1,39 +1,55 @@
 import SwiftUI
+import PhotosUI
 
 struct MainView: View {
     var body: some View {
         TabView {
-            ImageAnalysisView()
-                .tabItem {
-                    Label("Image Analysis", systemImage: "photo")
-                }
+            NavigationStack {
+                ImageAnalysisView()
+            }
+            .tabItem {
+                Label("Image Analysis", systemImage: "photo")
+            }
 
-            StatusView()
-                .tabItem {
-                    Label("Status", systemImage: "waveform.path.ecg")
-                }
+            NavigationStack {
+                StatusView()
+            }
+            .tabItem {
+                Label("Status", systemImage: "waveform.path.ecg")
+            }
 
-            CameraView()
-                .tabItem {
-                    Label("Camera", systemImage: "camera")
-                }
+            NavigationStack {
+                CameraView()
+            }
+            .tabItem {
+                Label("Camera", systemImage: "camera")
+            }
+
+            NavigationStack {
+                AddUploadView()
+            }
+            .tabItem {
+                Label("Upload", systemImage: "square.and.arrow.up")
+            }
         }
     }
 }
 
 struct StatusView: View {
     var body: some View {
-        Text("Status Placeholder")
+      Text("Status View")
     }
 }
 
 struct CameraView: View {
     var body: some View {
-        Text("Camera Placeholder")
+      Text("Camera View")
     }
 }
 
-#Preview {
-    MainView()
+struct ImageAnalysisView: View {
+    var body: some View {
+        Text("All iamge")
+    }
 }
 
