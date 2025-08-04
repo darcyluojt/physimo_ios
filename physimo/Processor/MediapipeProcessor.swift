@@ -1,7 +1,7 @@
 import UIKit
 import MediaPipeTasksVision
 
-class PoseLandmarkerService: NSObject {
+class MediapipeProcessor: NSObject {
     var poseLandmarker: PoseLandmarker?
     private(set) var runningMode = RunningMode.image
     private var numPoses: Int
@@ -49,16 +49,21 @@ class PoseLandmarkerService: NSObject {
         numPoses: Int,
         minPoseDetectionConfidence: Float,
         minPosePresenceConfidence: Float,
-        minTrackingConfidence: Float) -> PoseLandmarkerService? {
-            let poseLandmarkerService = PoseLandmarkerService(
+        minTrackingConfidence: Float) -> MediapipeProcessor? {
+            let MediapipeProcessor = MediapipeProcessor(
                 modelPath: modelPath,
                 runningMode: .image,
                 numPoses: numPoses,
                 minPoseDetectionConfidence: minPoseDetectionConfidence,
                 minPosePresenceConfidence: minPosePresenceConfidence,
                 minTrackingConfidence: minTrackingConfidence)
+<<<<<<< HEAD
 
             return poseLandmarkerService
+=======
+
+            return MediapipeProcessor
+>>>>>>> a43335a (streamline api output to body detection result)
         }
 
     func detect(image: MPImage) -> MediaPipePoseResult? {
@@ -89,33 +94,19 @@ class PoseLandmarkerService: NSObject {
     }
 }
 
-func bodyPart(for index: Int) -> BodyPart? {
-    switch index {
-    case 23: return .sided(.hip, .left)
-    case 24: return .sided(.hip, .right)
-    case 25: return .sided(.knee, .left)
-    case 26: return .sided(.knee, .right)
-    case 27: return .sided(.ankle, .left)
-    case 28: return .sided(.ankle, .right)
-    // Add more cases as needed for other body parts
-    default: return nil
-    }
-}
+struct MediaPipePoseResult {
+    let landmarks2D: [NormalizedLandmark]
+    let landmarks3D: [Landmark]
 
-extension Landmark {
-    var simdVector: SIMD3<Float> {
-        SIMD3(x, y, z)
-    }
-}
-
-extension NormalizedLandmark {
-    var simdVector: SIMD3<Float> {
-        SIMD3(x, y, 0)
+    func toBodyDetectionResult2D(imageOrientation: UIImage.Orientation = .up) -> BodyDetectionResult {
+        return BodyDetectionResult.from(mediaPipe2D: landmarks2D, imageOrientation: imageOrientation)
     }
 
-    var simd2Vector: SIMD2<Float> {
-        SIMD2(x, y)
+    func toBodyDetectionResult3D() -> BodyDetectionResult {
+        let jointVectors = landmarks3D.map { SIMD3<Float>($0.x, $0.y, $0.z) }
+        return BodyDetectionResult.from(mediaPipe3D: jointVectors)
     }
+
 }
 
 class MediaPipeProcessor: ImageProcessor {

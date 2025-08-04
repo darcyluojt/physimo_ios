@@ -11,12 +11,9 @@ class UploadViewModel {
     var processingResult: String = ""
     var metrics: [Metric] = []
     var poseLandmarks: [NormalizedLandmark]? = nil
-    var apple2DResult: DetectionResult2D? = nil
+    var apple2DResult: BodyDetectionResult? = nil
 
     private let imageProcessor = ImageProcessor()
-
-    init() {
-    }
 
     func handlePickedItem(_ item: PhotosPickerItem?) async {
         await processPicked(item)
@@ -39,13 +36,6 @@ class UploadViewModel {
              let result = try await imageProcessor.process(image: image)
           let calculated = calculatedMetrics(from: result)
           
-          // Log success/failure analysis
-          print("🎯 UploadViewModel Results:")
-          print("  Metrics calculated: \(calculated.count)")
-          print("  Has pose landmarks: \(result.mpPose?.landmarks2D != nil)")
-          print("  Landmarks count: \(result.mpPose?.landmarks2D.count ?? 0)")
-          print("  Has Apple 2D landmarks: \(result.pose2D != nil)")
-          print("  Apple 2D joints count: \(result.pose2D?.allJoints().count ?? 0)")
           
           await MainActor.run {
               self.metrics = calculated
@@ -85,49 +75,24 @@ class UploadViewModel {
 
     private func calculatedMetrics(
       from result: (
-        pose2D: DetectionResult2D?,
-        pose3D: DetectionResult?,
+        pose2D: BodyDetectionResult?,
+        pose3D: BodyDetectionResult?,
         mpPose: MediaPipePoseResult?
       )
     ) -> [Metric] {
         var allMetrics: [Metric] = []
+        
         if let apple3D = result.pose3D {
-          let apple3DMetrics = MetricsCalculator.calculateKneeAngles(
-            fromApple3D: apple3D,
-            archetypes: Archetype.all,
-            source: .HumanBodyPose3DObservation
-          )
-          allMetrics.append(contentsOf: apple3DMetrics)
+            allMetrics.append(contentsOf: apple3D.calculateMetrics(source: .HumanBodyPose3DObservation))
         }
-        if let mp3D = result.mpPose?.landmarks3D {
-            let jointVectors = mp3D.map { $0.simdVector }
-            let confidenceList = mp3D.map { Double(truncating: $0.visibility ?? 0) }
-            let mp3dMetrics = MetricsCalculator.calculateKneeAngles(
-            fromMP3D: jointVectors,
-            confidenceList: confidenceList,
-            archetypes: Archetype.all,
-            source: .MediaPipePoseWorldLandmarks
-            )
-          allMetrics.append(contentsOf: mp3dMetrics)
-        }
+        
         if let apple2D = result.pose2D {
-          let apple2DMetrics = MetricsCalculator.CalculateKneeAngles2D(
-            fromApple2D: apple2D,
-            archetypes: Archetype.all,
-            source: .HumanBodyPoseObservation
-          )
-          allMetrics.append(contentsOf: apple2DMetrics)
+            allMetrics.append(contentsOf: apple2D.calculateMetrics(source: .HumanBodyPoseObservation))
         }
-        if let mp2D = result.mpPose?.landmarks2D {
-            let jointPoints = mp2D.map { $0.cgPoint }
-            let confidenceList = mp2D.map { Double(truncating: $0.visibility ?? 0) }
-          let mp2dMetrics = MetricsCalculator.CalculateKneeAngles2D(
-            fromMP2D: jointPoints,
-            confidenceList: confidenceList,
-            archetypes: Archetype.all,
-            source: .MediaPipePoseLandmarks
-          )
-          allMetrics.append(contentsOf: mp2dMetrics)
+        
+        if let mpPose = result.mpPose {
+            allMetrics.append(contentsOf: mpPose.toBodyDetectionResult3D().calculateMetrics(source: .MediaPipePoseWorldLandmarks))
+            allMetrics.append(contentsOf: mpPose.toBodyDetectionResult2D().calculateMetrics(source: .MediaPipePoseLandmarks))
         }
 
         return allMetrics

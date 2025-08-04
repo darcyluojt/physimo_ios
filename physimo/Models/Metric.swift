@@ -1,7 +1,7 @@
 import Foundation
 struct Metric: Identifiable {
     let id: UUID
-    let archetype: Archetype
+    let configuration: MetricConfiguration
     let source: Source
     var value: Double
     var accuracy: Double?

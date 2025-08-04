@@ -5,7 +5,7 @@ import Vision
 struct ImageDetailsView: View {
     var image: UIImage?
     var landmarks: [NormalizedLandmark]?
-    var apple2DResult: DetectionResult2D?
+    var apple2DResult: BodyDetectionResult?
     var metrics: [Metric] = []
     var body: some View {
         GeometryReader { fullGeometry in
@@ -37,18 +37,25 @@ struct ImageDetailsView: View {
                                 
                                 Canvas { context, size in
                                     // Draw MediaPipe overlays in red
+                                    if let landmarks = landmarks {
+                                        let mpBodyResult = BodyDetectionResult.from(mediaPipe2D: landmarks, imageOrientation: uiImage.imageOrientation)
+                                        ImageAnalyser.drawOverlays(
+                                            in: context,
+                                            size: size,
+                                            for: uiImage,
+                                            from: mpBodyResult,
+                                            color: .red,
+                                            prefix: "🔍 MediaPipe")
+                                    }
+                                    
+                                    // Draw Apple 2D overlays in blue
                                     ImageAnalyser.drawOverlays(
                                         in: context,
                                         size: size,
                                         for: uiImage,
-                                        fromMP2D: landmarks)
-                                    
-                                    // Draw Apple 2D overlays in blue
-                                    ImageAnalyser.drawApple2DOverlays(
-                                        in: context,
-                                        size: size,
-                                        for: uiImage,
-                                        fromApple2D: apple2DResult)
+                                        from: apple2DResult,
+                                        color: .blue,
+                                        prefix: "🍎 Apple2D")
                                 }
                             }
                             .frame(width: displayWidth, height: displayHeight)
@@ -123,7 +130,7 @@ struct MetricsGridView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     
                     // Left value
-                    if let leftMetric = metrics.first(where: { $0.source == source && $0.archetype.side == .left }) {
+                    if let leftMetric = metrics.first(where: { $0.source == source && $0.configuration.side == .left }) {
                         VStack {
                             Text("\(leftMetric.value, specifier: "%.1f")°")
                                 .font(.body)
@@ -141,7 +148,7 @@ struct MetricsGridView: View {
                     }
                     
                     // Right value
-                    if let rightMetric = metrics.first(where: { $0.source == source && $0.archetype.side == .right }) {
+                    if let rightMetric = metrics.first(where: { $0.source == source && $0.configuration.side == .right }) {
                         VStack {
                             Text("\(rightMetric.value, specifier: "%.1f")°")
                                 .font(.body)
