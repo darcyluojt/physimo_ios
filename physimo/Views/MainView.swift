@@ -8,7 +8,7 @@ struct MainView: View {
                 ImageAnalysisView()
             }
             .tabItem {
-                Label("Image Analysis", systemImage: "photo")
+                Label("Pose Analysis", systemImage: "figure.walk")
             }
 
             NavigationStack {
@@ -23,13 +23,6 @@ struct MainView: View {
             }
             .tabItem {
                 Label("Camera", systemImage: "camera")
-            }
-
-            NavigationStack {
-                AddUploadView()
-            }
-            .tabItem {
-                Label("Upload", systemImage: "square.and.arrow.up")
             }
         }
     }
