@@ -78,7 +78,7 @@ class ImageProcessor {
                 print("  First 3 MP landmarks:")
                 for i in 0..<min(3, mpResult.landmarks2D.count) {
                     let landmark = mpResult.landmarks2D[i]
-                    print("    [\(i)] x:\(String(format: "%.3f", landmark.x)), y:\(String(format: "%.3f", landmark.y)), z:\(String(format: "%.3f", landmark.z ?? 0))")
+                    print("    [\(i)] x:\(String(format: "%.3f", landmark.x)), y:\(String(format: "%.3f", landmark.y)), z:\(String(format: "%.3f", landmark.z))")
                 }
             }
         }

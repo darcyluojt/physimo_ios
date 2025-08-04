@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import MediaPipeTasksVision
 
 struct ProcessedImage: Identifiable {
     let id = UUID()
@@ -8,11 +9,39 @@ struct ProcessedImage: Identifiable {
     let apple2DResult: BodyDetectionResult?
     let metrics: [Metric]
     let processingStatus: String
+    let captureDate: Date?
 
     var displayName: String {
         let formatter = DateFormatter()
+        formatter.dateStyle = .none
         formatter.timeStyle = .short
-        return "Image \(formatter.string(from: Date()))"
+
+        if let captureDate = captureDate {
+            return "Photo \(formatter.string(from: captureDate))"
+        } else {
+            return "Photo \(formatter.string(from: Date()))"
+        }
+    }
+
+    var formattedCaptureDate: String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+
+        if let captureDate = captureDate {
+            return formatter.string(from: captureDate)
+        } else {
+            return "Unknown date"
+        }
+    }
+
+    var metricsBreakdown: String {
+        let sources = Set(metrics.map { $0.source.displayName })
+        if sources.isEmpty {
+            return "No metrics calculated"
+        } else {
+            return "\(metrics.count) metrics from \(sources.count) source\(sources.count == 1 ? "" : "s")"
+        }
     }
 }
 
@@ -92,19 +121,14 @@ struct ImageAnalysisView: View {
                                         .clipped()
                                         .cornerRadius(8)
 
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(processedImage.displayName)
+                                    VStack(alignment: .leading, spacing: 4) {git
+
+                                        Text(processedImage.formattedCaptureDate)
                                             .font(.headline)
 
-                                        Text(processedImage.processingStatus)
+                                        Text(processedImage.metricsBreakdown)
                                             .font(.caption)
-                                            .foregroundColor(.secondary)
-
-                                        if !processedImage.metrics.isEmpty {
-                                            Text("\(processedImage.metrics.count) metrics calculated")
-                                                .font(.caption)
-                                                .foregroundColor(.blue)
-                                        }
+                                            .foregroundColor(.blue)
 
                                         // Show landmark counts
                                         HStack(spacing: 12) {
@@ -113,7 +137,7 @@ struct ImageAnalysisView: View {
                                                     Circle()
                                                         .fill(Color.red)
                                                         .frame(width: 8, height: 8)
-                                                    Text("MP: \(landmarks.count)")
+                                                    Text("MediaPipe: \(landmarks.count)")
                                                         .font(.caption2)
                                                 }
                                             }
@@ -125,6 +149,25 @@ struct ImageAnalysisView: View {
                                                         .frame(width: 8, height: 8)
                                                     Text("Apple: \(apple2D.landmarks.count)")
                                                         .font(.caption2)
+                                                }
+                                            }
+                                        }
+
+                                        // Show specific metrics if available
+                                        if !processedImage.metrics.isEmpty {
+                                            HStack(spacing: 8) {
+                                                ForEach(Array(Set(processedImage.metrics.map { $0.configuration.side })), id: \.self) { side in
+                                                    if let metric = processedImage.metrics.first(where: { $0.configuration.side == side }) {
+                                                        VStack(alignment: .leading, spacing: 2) {
+                                                            Text("\(side.rawValue.capitalized) Knee")
+                                                                .font(.caption2)
+                                                                .foregroundColor(.secondary)
+                                                            Text("\(metric.value, specifier: "%.1f")°")
+                                                                .font(.caption)
+                                                                .fontWeight(.medium)
+                                                                .foregroundColor(metric.configuration.status == .healthy ? .green : .orange)
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
@@ -159,6 +202,9 @@ struct ImageAnalysisView: View {
         isProcessing = true
 
         Task {
+            // Extract photo capture date first
+            let captureDate = await extractCaptureDate(from: item)
+
             // Use the existing UploadViewModel processing logic
             await viewModel.handlePickedItem(item)
 
@@ -169,7 +215,8 @@ struct ImageAnalysisView: View {
                         landmarks: viewModel.poseLandmarks,
                         apple2DResult: viewModel.apple2DResult,
                         metrics: viewModel.metrics,
-                        processingStatus: viewModel.processingResult
+                        processingStatus: viewModel.processingResult,
+                        captureDate: captureDate
                     )
 
                     processedImages.insert(newProcessedImage, at: 0) // Add to top
@@ -179,6 +226,39 @@ struct ImageAnalysisView: View {
                 selectedPhotoItem = nil // Reset picker
             }
         }
+    }
+
+    private func extractCaptureDate(from item: PhotosPickerItem) async -> Date? {
+        do {
+            if let data = try await item.loadTransferable(type: Data.self),
+               let imageSource = CGImageSourceCreateWithData(data as CFData, nil),
+               let properties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil) as? [String: Any] {
+
+                // Try EXIF data first
+                if let exifData = properties[kCGImagePropertyExifDictionary as String] as? [String: Any],
+                   let dateTimeOriginal = exifData[kCGImagePropertyExifDateTimeOriginal as String] as? String {
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy:MM:dd HH:mm:ss"
+                    if let date = formatter.date(from: dateTimeOriginal) {
+                        return date
+                    }
+                }
+
+                // Try TIFF data as fallback
+                if let tiffData = properties[kCGImagePropertyTIFFDictionary as String] as? [String: Any],
+                   let dateTime = tiffData[kCGImagePropertyTIFFDateTime as String] as? String {
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy:MM:dd HH:mm:ss"
+                    if let date = formatter.date(from: dateTime) {
+                        return date
+                    }
+                }
+            }
+        } catch {
+            print("Failed to extract capture date: \(error)")
+        }
+
+        return nil
     }
 
     private func deleteImages(offsets: IndexSet) {
