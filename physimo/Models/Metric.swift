@@ -1,13 +1,27 @@
-struct JointMetric: Identifiable {
-    let jointConfiguration: JointConfiguration
-    let modelName: String
-    let detectedAngle: Float?
-    let id: String
+import Foundation
+struct Metric: Identifiable {
+    let id: UUID
+    let configuration: MetricConfiguration
+    let source: Source
+    var value: Double
+    var accuracy: Double?
+    var ignored: Bool = false
+    var videoTimestamp: Double? = nil
+    let phtoTimestamp: Date
 
-    init(from config: JointConfiguration, modelName: String, detectionResult: BodyDetectionResult) {
-        self.jointConfiguration = config
-        self.modelName = modelName
-        self.detectedAngle = detectionResult.angle(of: config.joint)
-        self.id =  "\(modelName) - \(jointConfiguration.name)"
+    enum Source: String, Codable {
+        case HumanBodyPose3DObservation
+        case HumanBodyPoseObservation
+        case MediaPipePoseWorldLandmarks
+        case MediaPipePoseLandmarks
+
+        var displayName: String {
+            switch self {
+            case .HumanBodyPose3DObservation: return "Apple 3D Pose"
+            case .HumanBodyPoseObservation: return "Apple 2D Pose"
+            case .MediaPipePoseWorldLandmarks: return "MediaPipe 3D"
+            case .MediaPipePoseLandmarks: return "MediaPipe 2D"
+            }
+        }
     }
 }
