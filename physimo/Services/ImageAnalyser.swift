@@ -2,6 +2,7 @@ import Foundation
 import SwiftUICore
 import UIKit
 import MediaPipeTasksVision
+import Vision
 
 struct Line {
   let from: CGPoint
@@ -12,6 +13,52 @@ struct PoseOverlay {
   let dots: [CGPoint]
   let lines: [Line]
     let color: UIColor
+}
+
+struct ImageDisplayMetrics {
+    let originalSize: CGSize
+    let displayCanvasSize: CGSize
+    let scaledImageSize: CGSize
+    let scale: CGFloat
+    let offset: CGPoint
+    let image: UIImage
+    
+    init(image: UIImage, canvasSize: CGSize) {
+        self.image = image
+        self.displayCanvasSize = canvasSize
+        
+        // Calculate original image size for scaling
+        self.originalSize = image.size
+        
+        // Calculate scaling ratios
+        let widthRatio = canvasSize.width / originalSize.width
+        let heightRatio = canvasSize.height / originalSize.height
+        self.scale = min(heightRatio, widthRatio)
+        
+        // Calculate actual image display area within canvas
+        self.scaledImageSize = CGSize(
+            width: originalSize.width * scale, 
+            height: originalSize.height * scale
+        )
+        
+        // Calculate centering offset
+        self.offset = CGPoint(
+            x: (canvasSize.width - scaledImageSize.width) / 2,
+            y: (canvasSize.height - scaledImageSize.height) / 2
+        )
+    }
+    
+    func printDebugInfo(prefix: String) {
+        print("\(prefix) Debug:")
+        print("  Image size: \(image.size)")
+        print("  Image orientation: \(image.imageOrientation.rawValue)")
+        print("  Calculated original size: \(originalSize)")
+        print("  Display canvas size: \(displayCanvasSize)")
+        print("  Width ratio: \(displayCanvasSize.width / originalSize.width), Height ratio: \(displayCanvasSize.height / originalSize.height)")
+        print("  Selected scale: \(scale)")
+        print("  Scaled image size: \(scaledImageSize)")
+        print("  Offset: (\(offset.x), \(offset.y))")
+    }
 }
 
 class ImageAnalyser {
@@ -29,34 +76,15 @@ class ImageAnalyser {
         guard let landmarks = fromMP2D, !landmarks.isEmpty else { return }
         let analyser = ImageAnalyser()
         
-        // Debug: Log image and display information
-        let originalSize = analyser.imageSize(for: image)
-        print("🔍 ImageAnalyser Debug:")
-        print("  Image size: \(image.size)")
-        print("  Image orientation: \(image.imageOrientation.rawValue)")
-        print("  Calculated original size: \(originalSize)")
-        print("  Display canvas size: \(size)")
-        
-        let widthRatio = size.width / originalSize.width
-        let heightRatio = size.height / originalSize.height
-        let scale = min(heightRatio, widthRatio)
-        
-        print("  Width ratio: \(widthRatio), Height ratio: \(heightRatio)")
-        print("  Selected scale: \(scale)")
-        
-        // Calculate actual image display area within canvas
-        let scaledImageSize = CGSize(width: originalSize.width * scale, height: originalSize.height * scale)
-        let offsetX = (size.width - scaledImageSize.width) / 2
-        let offsetY = (size.height - scaledImageSize.height) / 2
-        
-        print("  Scaled image size: \(scaledImageSize)")
-        print("  Offset: (\(offsetX), \(offsetY))")
+        // Use shared display metrics calculation
+        let metrics = ImageDisplayMetrics(image: image, canvasSize: size)
+        metrics.printDebugInfo(prefix: "🔍 MediaPipe")
         print("  First landmark: (\(landmarks[0].x), \(landmarks[0].y))")
         
         let overlays = analyser.poseOverlays(
             fromMP2D: landmarks, 
-            overlaySize: scaledImageSize,
-            offset: CGPoint(x: offsetX, y: offsetY),
+            overlaySize: metrics.scaledImageSize,
+            offset: metrics.offset,
             image: image
         )
         
@@ -76,6 +104,38 @@ class ImageAnalyser {
                 context.stroke(path, with: .color(Color(overlay.color)), lineWidth: 2)
             }
         }
+    }
+    
+    static func drawApple2DOverlays(
+        in context: GraphicsContext,
+        size: CGSize,
+        for image: UIImage,
+        fromApple2D: DetectionResult2D? = nil
+    ) {
+        guard let apple2DResult = fromApple2D else { return }
+        let landmarks = apple2DResult.allJoints()
+        guard !landmarks.isEmpty else { return }
+        
+        let analyser = ImageAnalyser()
+        
+        // Use shared display metrics calculation
+        let metrics = ImageDisplayMetrics(image: image, canvasSize: size)
+        metrics.printDebugInfo(prefix: "🍎 Apple2D")
+        print("  Apple 2D joints available: \(landmarks.keys.map { $0.rawValue }.joined(separator: ", "))")
+        
+        // Convert Apple 2D landmarks to dots (just dots for now, no lines)
+        let dots = analyser.apple2DDots(
+            fromApple2D: apple2DResult,
+            metrics: metrics
+        )
+        
+        // Draw Apple 2D dots in blue
+        for dot in dots {
+            let rect = CGRect(x: dot.x - 3, y: dot.y - 3, width: 6, height: 6)
+            context.fill(Path(ellipseIn: rect), with: .color(.blue))
+        }
+        
+        print("  Apple 2D dots drawn: \(dots.count)")
     }
     
     
@@ -203,6 +263,41 @@ class ImageAnalyser {
         let displayY = (uiY / uiImageSize.height) * displaySize.height
         
         return (displayX, displayY)
+    }
+    
+    func apple2DDots(
+        fromApple2D: DetectionResult2D,
+        metrics: ImageDisplayMetrics
+    ) -> [CGPoint] {
+        print("🎯 Apple2D Dots Debug:")
+        print("  Overlay size: \(metrics.scaledImageSize)")
+        print("  Offset: \(metrics.offset)")
+        print("  Image orientation: \(metrics.image.imageOrientation.rawValue)")
+        
+        // Convert Apple 2D landmarks to screen coordinates
+        // First, let's test if Apple coordinates need transformation like MediaPipe
+        var dots: [CGPoint] = []
+        
+        let landmarks = fromApple2D.allJoints()
+        for (jointName, recognizedPoint) in landmarks {
+            let landmark = recognizedPoint.location.cgPoint
+            let x = landmark.x
+            let y = landmark.y
+            
+            // Apple Vision uses bottom-left origin (0,0), but SwiftUI uses top-left origin
+            // Need to flip Y-coordinate: newY = 1.0 - oldY
+            let flippedY = 1.0 - y
+            
+            // Scale to display size
+            let displayX = x * metrics.scaledImageSize.width + metrics.offset.x
+            let displayY = flippedY * metrics.scaledImageSize.height + metrics.offset.y
+            
+            dots.append(CGPoint(x: displayX, y: displayY))
+            
+            print("    \(jointName.rawValue): (\(x), \(y)) -> (\(displayX), \(displayY))")
+        }
+        
+        return dots
     }
     
 }

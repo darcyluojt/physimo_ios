@@ -1,9 +1,11 @@
 import SwiftUI
 import MediaPipeTasksVision
+import Vision
 
 struct UploadedImageView: View {
     var image: UIImage?
     var landmarks: [NormalizedLandmark]?
+    var apple2DResult: DetectionResult2D?
     var metrics: [Metric] = []
     var body: some View {
         GeometryReader { fullGeometry in
@@ -34,11 +36,19 @@ struct UploadedImageView: View {
                                     .scaledToFit()
                                 
                                 Canvas { context, size in
+                                    // Draw MediaPipe overlays in red
                                     ImageAnalyser.drawOverlays(
                                         in: context,
                                         size: size,
                                         for: uiImage,
                                         fromMP2D: landmarks)
+                                    
+                                    // Draw Apple 2D overlays in blue
+                                    ImageAnalyser.drawApple2DOverlays(
+                                        in: context,
+                                        size: size,
+                                        for: uiImage,
+                                        fromApple2D: apple2DResult)
                                 }
                             }
                             .frame(width: displayWidth, height: displayHeight)

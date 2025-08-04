@@ -3,7 +3,7 @@ import PhotosUI
 
 struct AddUploadView: View {
     @Environment(\.presentationMode) private var presentationMode
-    @StateObject private var viewModel = UploadViewModel()
+    @State private var viewModel = UploadViewModel()
     @State private var selectedItem: PhotosPickerItem? = nil
     @State private var showPicker = false
     @State private var navigate = false
@@ -34,6 +34,7 @@ struct AddUploadView: View {
                 UploadedImageView(
                     image: viewModel.selectedImage,
                     landmarks: viewModel.poseLandmarks,
+                    apple2DResult: viewModel.apple2DResult,
                     metrics: viewModel.metrics)
             }
     }
