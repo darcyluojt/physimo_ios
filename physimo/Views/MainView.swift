@@ -47,9 +47,3 @@ struct CameraView: View {
     }
 }
 
-struct ImageAnalysisView: View {
-    var body: some View {
-        Text("All iamge")
-    }
-}
-

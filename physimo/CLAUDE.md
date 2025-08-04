@@ -27,8 +27,7 @@ Physimo is an iOS SwiftUI application for human pose analysis and joint angle me
 - `PoseLandmarkerService` (MediapipeProcessor.swift): Google MediaPipe pose detection service
 
 **Data Models:**
-- `Upload`: Represents an analyzed image with associated metrics
-- `Metric`: Individual joint angle measurements with accuracy scores
+- `Metric`: Individual joint angle measurements with accuracy scores  
 - `Archetype`: Defines which joints to analyze (left/right knee, etc.)
 
 **Metrics Calculation:**
@@ -48,7 +47,7 @@ Physimo is an iOS SwiftUI application for human pose analysis and joint angle me
 physimo/
 ├── Models/           # Data models (Upload, Metric, Archetype, etc.)
 ├── Views/           # SwiftUI views organized by feature
-├── Services/        # Business logic (ImageProcessor, MetricsCalculator, UploadStore)
+├── Services/        # Business logic (ImageProcessor, MetricsCalculator)
 ├── Processor/       # Pose detection processors (Vision, MediaPipe)
 ├── Helpers/         # Utility functions (angle calculations, extensions)
 ├── ViewModels/      # View state management

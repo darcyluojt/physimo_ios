@@ -2,7 +2,7 @@ import SwiftUI
 import MediaPipeTasksVision
 import Vision
 
-struct UploadedImageView: View {
+struct ImageDetailsView: View {
     var image: UIImage?
     var landmarks: [NormalizedLandmark]?
     var apple2DResult: DetectionResult2D?
@@ -77,7 +77,7 @@ struct UploadedImageView: View {
     }
     
     private func logImageViewDebug(image: UIImage, aspectRatio: CGFloat, container: CGSize, displaySize: CGSize) -> Void {
-        print("📱 UploadedImageView Debug:")
+        print("📱 ImageDetailsView Debug:")
         print("  UIImage.size: \(image.size)")
         print("  UIImage.orientation: \(image.imageOrientation.rawValue)")
         print("  Calculated aspect ratio: \(aspectRatio)")

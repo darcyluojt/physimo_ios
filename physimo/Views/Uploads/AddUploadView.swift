@@ -31,7 +31,7 @@ struct AddUploadView: View {
                 }
             }
             .navigationDestination(isPresented: $navigate) {
-                UploadedImageView(
+                ImageDetailsView(
                     image: viewModel.selectedImage,
                     landmarks: viewModel.poseLandmarks,
                     apple2DResult: viewModel.apple2DResult,

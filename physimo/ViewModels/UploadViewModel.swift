@@ -14,10 +14,8 @@ class UploadViewModel {
     var apple2DResult: DetectionResult2D? = nil
 
     private let imageProcessor = ImageProcessor()
-    private let uploadStore: UploadStore
 
-    init(uploadStore: UploadStore = .shared) {
-        self.uploadStore = uploadStore
+    init() {
     }
 
     func handlePickedItem(_ item: PhotosPickerItem?) async {
@@ -39,8 +37,7 @@ class UploadViewModel {
 
         do {
              let result = try await imageProcessor.process(image: image)
-          let uploadId = UUID()
-          let calculated = calculatedMetrics(from: result, uploadId: uploadId)
+          let calculated = calculatedMetrics(from: result)
           
           // Log success/failure analysis
           print("🎯 UploadViewModel Results:")
@@ -59,8 +56,6 @@ class UploadViewModel {
           }
           
           processingResult = calculated.isEmpty ? "No metrics found." : "Calculated \(calculated.count) metrics."
-          let upload = StoredUpload(id: uploadId, image: image, metrics: calculated)
-          uploadStore.save(upload)
           
           // Final success indicator
           let hasVisualOverlays = result.mpPose?.landmarks2D != nil && !result.mpPose!.landmarks2D.isEmpty
@@ -93,14 +88,12 @@ class UploadViewModel {
         pose2D: DetectionResult2D?,
         pose3D: DetectionResult?,
         mpPose: MediaPipePoseResult?
-      ),
-      uploadId: UUID
+      )
     ) -> [Metric] {
         var allMetrics: [Metric] = []
         if let apple3D = result.pose3D {
           let apple3DMetrics = MetricsCalculator.calculateKneeAngles(
             fromApple3D: apple3D,
-            uploadId: uploadId,
             archetypes: Archetype.all,
             source: .HumanBodyPose3DObservation
           )
@@ -112,7 +105,6 @@ class UploadViewModel {
             let mp3dMetrics = MetricsCalculator.calculateKneeAngles(
             fromMP3D: jointVectors,
             confidenceList: confidenceList,
-            uploadId: uploadId,
             archetypes: Archetype.all,
             source: .MediaPipePoseWorldLandmarks
             )
@@ -121,7 +113,6 @@ class UploadViewModel {
         if let apple2D = result.pose2D {
           let apple2DMetrics = MetricsCalculator.CalculateKneeAngles2D(
             fromApple2D: apple2D,
-            uploadId: uploadId,
             archetypes: Archetype.all,
             source: .HumanBodyPoseObservation
           )
@@ -133,7 +124,6 @@ class UploadViewModel {
           let mp2dMetrics = MetricsCalculator.CalculateKneeAngles2D(
             fromMP2D: jointPoints,
             confidenceList: confidenceList,
-            uploadId: uploadId,
             archetypes: Archetype.all,
             source: .MediaPipePoseLandmarks
           )
