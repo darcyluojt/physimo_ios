@@ -36,20 +36,17 @@ struct ImageDetailsView: View {
                                     .scaledToFit()
                                 
                                 Canvas { context, size in
-                                    // Draw MediaPipe overlays in red
-                                    if let landmarks = landmarks {
-                                        let mpBodyResult = BodyDetectionResult.from(mediaPipe2D: landmarks, imageOrientation: uiImage.imageOrientation)
-                                        ImageAnalyser.drawOverlays(
-                                            in: context,
-                                            size: size,
-                                            for: uiImage,
-                                            from: mpBodyResult,
-                                            color: .red,
-                                            prefix: "🔍 MediaPipe")
-                                    }
+                                    // Draw MediaPipe overlays in red (preserves all 33 landmarks)
+                                    ImageAnalyser.drawMediaPipeOverlays(
+                                        in: context,
+                                        size: size,
+                                        for: uiImage,
+                                        fromMP2D: landmarks,
+                                        color: .red,
+                                        prefix: "🔍 MediaPipe")
                                     
                                     // Draw Apple 2D overlays in blue
-                                    ImageAnalyser.drawOverlays(
+                                    ImageAnalyser.drawAppleOverlays(
                                         in: context,
                                         size: size,
                                         for: uiImage,
